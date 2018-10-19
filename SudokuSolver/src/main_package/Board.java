@@ -2,6 +2,8 @@ package main_package;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Board extends Square {
 	private final int XPOS = 10;
@@ -13,6 +15,7 @@ public class Board extends Square {
 	private int cellWidth;
 	private int cellHeight;
 	private Grid grid;
+	private List<int[]> prefilledCellCenters;
 
 	public Board(Color c, int width, int height, Grid grid) {
 		super(c, width, height);
@@ -68,10 +71,16 @@ public class Board extends Square {
 	}
 
 	public void fillCells(Graphics g) {
+		
+		prefilledCellCenters = new ArrayList<>();
 		char[] initialState = grid.getInitialState();
+		
 		for (int i = 0; i < cells.length; i++) {
+			
 			if (Character.isDigit(initialState[i])) {
+				
 				int[] cellCenter = getSqrCenter(cells[i].getX(), cells[i].getY());
+				prefilledCellCenters.add(cellCenter);
 				g.drawChars(initialState, i, 1, cellCenter[0] - OFFSET, cellCenter[1] + OFFSET);
 			}
 		}
@@ -94,5 +103,17 @@ public class Board extends Square {
 		}
 
 		return cellColor;
+	}
+	
+	public boolean cellPrefilled(int[] coordinates) {
+		
+		for (int[] cellCenter : prefilledCellCenters) {
+			
+			if (cellCenter[0] == coordinates[0] && cellCenter[1] == coordinates[1]) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

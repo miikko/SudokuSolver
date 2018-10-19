@@ -177,48 +177,55 @@ public class Grid {
 	// Pair coordinates are mirrored. Example: cell1(1,2), cell2(7,6)
 	private boolean removeValuePairsFromGrid(char[] initialCellValues) {
 
-		outerloop:
-		for (int i = 0; i < 9; i++) {
-
-			for (int j = 0; j < 9; j++) {
+		int lastIndex = 40;
+		int counter = 0;
+		boolean[] checkedCellIndexes = new boolean[lastIndex + 1];
+		
+		while (counter < checkedCellIndexes.length) {
+			
+			int cellIndex = random.nextInt(lastIndex + 1);
+			
+			if (checkedCellIndexes[cellIndex] == false) {
 				
-				//Exit loops when all of the cells have been checked
-				if (i == 4 && j == 5) {
-					break outerloop;
-				}
+				counter++;
+				checkedCellIndexes[cellIndex] = true;
+				int[] rowAndColumnNums = getRowAndColumnNums(cellIndex);
+				int rowNum = rowAndColumnNums[0];
+				int columnNum = rowAndColumnNums[1];
+				
+				char[] copyValues = new char[] { cellRowValues[rowNum][columnNum], cellRowValues[8 - rowNum][8 - columnNum] };
+				clearCellValueFromArrays(rowNum, columnNum, initialCellValues);
+				clearCellValueFromArrays(8 - rowNum, 8 - columnNum, initialCellValues);
+				
+				if (!sMethods.checkForSingleSolution(cellRowValues, cellColumnValues, cellBoxValues)) {
+					cellRowValues[rowNum][columnNum] = copyValues[0];
+					cellColumnValues[columnNum][rowNum] = copyValues[0];
+					int[] boxCoordinates = getCellBoxCoordinates(rowNum, columnNum);
+					cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[0];
+					initialCellValues[getIndex(rowNum, columnNum)] = copyValues[0];
 
-				if (Character.isDigit(cellRowValues[i][j])) {
-					
-					// This line might not work, reference instead of copy
-					char[] copyValues = new char[] { cellRowValues[i][j], cellRowValues[8 - i][8 - j] };
-					clearCellValueFromArrays(i, j, initialCellValues);
-					clearCellValueFromArrays(8 - i, 8 - j, initialCellValues);
-					
-					if (!sMethods.checkForSingleSolution(cellRowValues, cellColumnValues, cellBoxValues)) {
+					cellRowValues[8 - rowNum][8 - columnNum] = copyValues[1];
+					cellColumnValues[8 - columnNum][8 - rowNum] = copyValues[1];
+					boxCoordinates = getCellBoxCoordinates(8 - rowNum, 8 - columnNum);
+					cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[1];
+					initialCellValues[getIndex(8 - rowNum, 8 - columnNum)] = copyValues[1];
 
-						cellRowValues[i][j] = copyValues[0];
-						cellColumnValues[j][i] = copyValues[0];
-						int[] boxCoordinates = getCellBoxCoordinates(i, j);
-						cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[0];
-						initialCellValues[getIndex(i, j)] = copyValues[0];
-
-						cellRowValues[8 - i][8 - j] = copyValues[1];
-						cellColumnValues[8 - j][8 - i] = copyValues[1];
-						boxCoordinates = getCellBoxCoordinates(8 - i, 8 - j);
-						cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[1];
-						initialCellValues[getIndex(8 - i, 8 - j)] = copyValues[1];
-
-					}
 				}
 			}
 		}
-
+		
 		return false;
 	}
 
 	private int getIndex(int rowNumber, int columnNumber) {
 		int index = columnNumber + rowNumber * 9;
 		return index;
+	}
+	
+	private int[] getRowAndColumnNums(int index) {		
+		int rowNumber = index / 9;
+		int columnNumber = index % 9;
+		return new int[] {rowNumber, columnNumber};
 	}
 
 	private void printArrays() {

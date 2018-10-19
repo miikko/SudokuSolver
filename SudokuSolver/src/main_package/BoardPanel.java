@@ -8,6 +8,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -64,15 +65,21 @@ public class BoardPanel extends JPanel {
 	}
 
 	private void paintNumber() {
-		numberFlag = true;
-		repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
-				board.getCellWidth() - 1, board.getCellHeight() - 1);
+
+		if (!board.cellPrefilled(coordinates)) {
+			numberFlag = true;
+			repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
+					board.getCellWidth() - 1, board.getCellHeight() - 1);
+		}
 	}
 
 	private void clearCell() {
-		numberFlag = false;
-		repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
-				board.getCellWidth() - 1, board.getCellHeight() - 1);
+
+		if (!board.cellPrefilled(coordinates)) {
+			numberFlag = false;
+			repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
+					board.getCellWidth() - 1, board.getCellHeight() - 1);
+		}
 	}
 
 	public Dimension getPreferredSize() {
@@ -97,9 +104,9 @@ public class BoardPanel extends JPanel {
 
 		if (numberFlag) {
 			g.drawChars(NUMBERS, indexOfNumber, 1, coordinates[0] - OFFSET, coordinates[1] + OFFSET);
-			// numberFlag = false;
+			numberFlag = false;
 		}
-		
+
 		boardLoadCounter++;
 	}
 }

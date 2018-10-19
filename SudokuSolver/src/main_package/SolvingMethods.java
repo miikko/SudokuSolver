@@ -1,7 +1,7 @@
 package main_package;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -27,15 +27,15 @@ public class SolvingMethods implements SolvingMethods_IF {
 		copyColumnValues = copy2DimensionalArray(columnValues, 9, 9);
 		copyBoxValues = copy2DimensionalArray(boxValues, 9, 9);
 		progressMade = true;
+		setPossibleValues(copyRowValues);
 
 		while (progressMade) {
 			progressMade = false;
-			setPossibleValues(copyRowValues);
+			candidateLine();
 			singleCandidate();
-			setPossibleValues(copyRowValues);
 			singlePosition();
 		}
-
+		System.out.println("End");
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
 				if (!Character.isDigit(copyRowValues[i][j])) {
@@ -49,17 +49,17 @@ public class SolvingMethods implements SolvingMethods_IF {
 	@Override
 	public void singlePosition() {
 
-		Character[][][] possibleRowValues = new Character[9][9][1];
-		Character[][][] possibleColumnValues = new Character[9][9][1];
-		Character[][][] possibleBoxValues = new Character[9][9][0];
-		Integer[] keys = possibleValues.keySet().toArray(new Integer[possibleValues.keySet().size()]);
+		Character[][][] possibleRowValues = new Character[9][9][9];
+		Character[][][] possibleColumnValues = new Character[9][9][9];
+		Character[][][] possibleBoxValues = new Character[9][9][9];
 
+		// Finds possible values
 		for (int i = 0; i < 9; i++) {
 
 			for (int j = 0; j < 9; j++) {
 
-				int index = getIndex(i, j);
-				if (possibleValues.get(index) != null && possibleValues.get(index).size() > 1) {
+				int index = getIndex(i, j, 1);
+				if (possibleValues.get(index) != null && possibleValues.get(index).size() > 0) {
 
 					List<Character> possibleValuesForThisCell = possibleValues.get(index);
 					possibleRowValues[i][j] = listToArray(possibleValuesForThisCell);
@@ -70,44 +70,13 @@ public class SolvingMethods implements SolvingMethods_IF {
 			}
 		}
 
-		LinkedHashMap<Character, Integer> singles = new LinkedHashMap<>();
-		List<Character> bannedValues = new ArrayList<>();
-
-		outerloop:
-		for (int i = 0; i < 9; i++) {
-
-			for (int j = 0; j < 9; j++) {
-
-				if (possibleRowValues[i][j][0] != null && Character.isDigit(possibleRowValues[i][j][0])) {
-
-					for (int k = 0; k < possibleRowValues[i][j].length; k++) {
-
-						if (singles.containsKey(possibleRowValues[i][j][k]) && !bannedValues.contains(possibleRowValues[i][j][k])) {
-							
-							bannedValues.add(possibleRowValues[i][j][k]);
-							
-						} else if (!singles.containsKey(possibleRowValues[i][j][k])){
-							
-							singles.put(possibleRowValues[i][j][k], getIndex(i, j));
-						}
-					}
-				}
-			}
-			
-			//Check for singles
-			Character[] singleKeys = singles.keySet().toArray(new Character[singles.keySet().size()]);
-			for (int z = 0; z < singleKeys.length; z++) {
-				
-				if (!bannedValues.contains(singleKeys[z])) {
-					putValueToArrays(singleKeys[z], singles.get(singleKeys[z]));
-					progressMade = true;
-					break outerloop;
-				}
-			}
-			singles.clear();
-			bannedValues.clear();
+		if (findSingles(possibleRowValues, 1)) {
+			progressMade = true;
+		} else if (findSingles(possibleColumnValues, 2)) {
+			progressMade = true;
+		} else if (findSingles(possibleBoxValues, 3)) {
+			progressMade = true;
 		}
-
 	}
 
 	@Override
@@ -118,50 +87,149 @@ public class SolvingMethods implements SolvingMethods_IF {
 		for (int i = 0; i < keys.length; i++) {
 
 			if (possibleValues.get(keys[i]).size() == 1) {
-
 				putValueToArrays(possibleValues.get(keys[i]).get(0), keys[i]);
-				possibleValues.get(keys[i]).remove(0);
-				progressMade = true;
 			}
 		}
 
 	}
-	
-	private void sortPossibleValues(LinkedHashMap<Character, Integer> singles, List<Character> bannedValues, Character[][][] possibleValues) {
-		outerloop:
-			for (int i = 0; i < 9; i++) {
 
-				for (int j = 0; j < 9; j++) {
+	@Override
+	public void candidateLine() {
 
-					if (possibleValues[i][j][0] != null && Character.isDigit(possibleValues[i][j][0])) {
+		Character[][][] possibleBoxValues = new Character[9][9][9];
 
-						for (int k = 0; k < possibleValues[i][j].length; k++) {
+		// Filling the array for better iterability
+		for (int i = 0; i < 9; i++) {
 
-							if (singles.containsKey(possibleValues[i][j][k]) && !bannedValues.contains(possibleValues[i][j][k])) {
-								
-								bannedValues.add(possibleValues[i][j][k]);
-								
-							} else if (!singles.containsKey(possibleValues[i][j][k])){
-								
-								singles.put(possibleValues[i][j][k], getIndex(i, j));
-							}
+			for (int j = 0; j < 9; j++) {
+
+				int index = getIndex(i, j, 1);
+				if (possibleValues.get(index) != null && possibleValues.get(index).size() > 0) {
+
+					List<Character> possibleValuesForThisCell = possibleValues.get(index);
+					int[] boxCoordinates = getCellBoxCoordinates(i, j);
+					possibleBoxValues[boxCoordinates[0]][boxCoordinates[1]] = listToArray(possibleValuesForThisCell);
+				}
+			}
+		}
+
+		// Checking each box individually
+		for (int i = 0; i < possibleBoxValues.length; i++) {
+
+			LinkedHashMap<Character, List<Integer>> pBVByRow = new LinkedHashMap<>();
+			LinkedHashMap<Character, List<Integer>> pBVByColumn = new LinkedHashMap<>();
+			int boxRowNumber = 0;
+			int boxColumnNumber = 0;
+
+			for (int j = 0; j < possibleBoxValues[i].length; j++) {
+
+				if (boxColumnNumber == 3) {
+					boxRowNumber++;
+					boxColumnNumber = 0;
+				}
+
+				List<Character> thisCellPV = Arrays.asList(possibleBoxValues[i][j]);
+				for (int k = 0; k < thisCellPV.size(); k++) {
+
+					Character thisPV = thisCellPV.get(k);
+					if (thisPV != null && Character.isDigit(thisPV)) {
+
+						if (pBVByRow.get(thisPV) == null) {
+							pBVByRow.put(thisPV, new ArrayList<Integer>());
+						}
+						if (pBVByColumn.get(thisPV) == null) {
+							pBVByColumn.put(thisPV, new ArrayList<Integer>());
+						}
+
+						if (!pBVByRow.get(thisPV).contains(boxRowNumber)) {
+							pBVByRow.get(thisPV).add(boxRowNumber);
+						}
+						if (!pBVByColumn.get(thisPV).contains(boxColumnNumber)) {
+							pBVByColumn.get(thisPV).add(boxColumnNumber);
 						}
 					}
 				}
+
+				boxColumnNumber++;
+			}
+
+			Character[] rowKeys = pBVByRow.keySet().toArray(new Character[pBVByRow.keySet().size()]);
+			for (int k = 0; k < rowKeys.length; k++) {
+
+				if (pBVByRow.get(rowKeys[k]).size() == 1) {
+
+					int gridRowNumber = pBVByRow.get(rowKeys[k]).get(0) + (i / 3) * 3;
+					List<Integer> protectedIndexes = new ArrayList<>();
+					for (int z = 0; z < 3; z++) {
+						protectedIndexes.add(gridRowNumber * 9 + (i % 3) * 3 + z);
+					}
+					removePossibleValuesFromRow(rowKeys[k], gridRowNumber, protectedIndexes);
+				}
+			}
+			
+			Character[] columnKeys = pBVByColumn.keySet().toArray(new Character[pBVByColumn.keySet().size()]);
+			for (int k = 0; k < columnKeys.length; k++) {
 				
-				//Check for singles
-				Character[] singleKeys = singles.keySet().toArray(new Character[singles.keySet().size()]);
-				for (int z = 0; z < singleKeys.length; z++) {
+				if (pBVByColumn.get(columnKeys[k]).size() == 1) {
 					
-					if (!bannedValues.contains(singleKeys[z])) {
-						putValueToArrays(singleKeys[z], singles.get(singleKeys[z]));
-						progressMade = true;
-						break outerloop;
+					int gridColumnNumber = pBVByColumn.get(columnKeys[k]).get(0) + (i % 3) * 3;
+					List<Integer> protectedIndexes = new ArrayList<>();
+					int startingIndex = gridColumnNumber + (i / 3) * 27;
+					for (int z = 0; z < 3; z++) {
+						protectedIndexes.add(startingIndex + z * 9);
+					}
+					removePossibleValuesFromColumn(columnKeys[k], gridColumnNumber, protectedIndexes);
+				}
+			}
+
+		}
+	}
+
+	@Override
+	public void doublePairs() {
+		
+	}
+	
+	private boolean findSingles(Character[][][] possibleValues, int selectionType) {
+
+		LinkedHashMap<Character, Integer> singles = new LinkedHashMap<Character, Integer>();
+		List<Character> bannedValues = new ArrayList<>();
+
+		for (int i = 0; i < 9; i++) {
+
+			for (int j = 0; j < 9; j++) {
+
+				if (possibleValues[i][j][0] != null && Character.isDigit(possibleValues[i][j][0])) {
+
+					for (int k = 0; k < possibleValues[i][j].length; k++) {
+
+						if (singles.containsKey(possibleValues[i][j][k])
+								&& !bannedValues.contains(possibleValues[i][j][k])) {
+
+							bannedValues.add(possibleValues[i][j][k]);
+
+						} else if (!singles.containsKey(possibleValues[i][j][k])) {
+
+							singles.put(possibleValues[i][j][k], getIndex(i, j, selectionType));
+						}
 					}
 				}
-				singles.clear();
-				bannedValues.clear();
 			}
+
+			// Check for singles
+			Character[] singleKeys = singles.keySet().toArray(new Character[singles.keySet().size()]);
+			for (int z = 0; z < singleKeys.length; z++) {
+
+				if (!bannedValues.contains(singleKeys[z])) {
+
+					putValueToArrays(singleKeys[z], singles.get(singleKeys[z]));
+					return true;
+				}
+			}
+			singles.clear();
+			bannedValues.clear();
+		}
+		return false;
 	}
 
 	private char[][] copy2DimensionalArray(char[][] twoDimensionalArray, int firstLength, int secondLength) {
@@ -176,11 +244,74 @@ public class SolvingMethods implements SolvingMethods_IF {
 		return copy;
 	}
 
-	private int getIndex(int rowNumber, int columnNumber) {
-		int index = columnNumber + rowNumber * 9;
+	/**
+	 * Combines the two parameters into a single index. Selection types are as
+	 * follows: 1 for row, 2 for column and 3 for box.
+	 * 
+	 * @param firstNumber
+	 * @param secondNumber
+	 * @param selectionType
+	 * @return
+	 */
+	private int getIndex(int firstNumber, int secondNumber, int selectionType) {
+		int index = 0;
+
+		switch (selectionType) {
+		case 1:
+			index = secondNumber + firstNumber * 9;
+			break;
+		case 2:
+			index = firstNumber + secondNumber * 9;
+			break;
+		case 3:
+
+			int rowNumber;
+			int columnNumber;
+
+			if (firstNumber < 3) {
+				rowNumber = 0;
+			} else if (firstNumber < 6) {
+				rowNumber = 3;
+			} else {
+				rowNumber = 6;
+			}
+
+			if (secondNumber < 3) {
+
+			} else if (secondNumber < 6) {
+				rowNumber += 1;
+			} else {
+				rowNumber += 2;
+			}
+
+			if (firstNumber % 3 == 0) {
+				columnNumber = 0;
+			} else if (firstNumber % 3 == 1) {
+				columnNumber = 3;
+			} else {
+				columnNumber = 6;
+			}
+
+			if (secondNumber % 3 == 0) {
+
+			} else if (secondNumber % 3 == 1) {
+				columnNumber += 1;
+			} else {
+				columnNumber += 2;
+			}
+			index = columnNumber + rowNumber * 9;
+			break;
+
+		default:
+			System.out.println("Tried called getIndex with an invalid selectionType.");
+			break;
+		}
 		return index;
 	}
 
+	/**
+	 * Checks if specified value is found on the same row/column/box
+	 */
 	private boolean validate(char value, int rowNumber, int columnNumber) {
 
 		for (int i = 0; i < 9; i++) {
@@ -263,10 +394,18 @@ public class SolvingMethods implements SolvingMethods_IF {
 		copyColumnValues[columnNumber][rowNumber] = value;
 		int[] boxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
 		copyBoxValues[boxCoordinates[0]][boxCoordinates[1]] = value;
+		updatePossibleValues(index, value);
 	}
-	
+
+	/**
+	 * Iterates through all the cells. Upon finding an empty cell, the method will
+	 * fill a list with all the possible values for that cell. After filling the
+	 * list, it will be put into a HashMap that uses the cell's index as a key.
+	 * 
+	 * @param copyRowValues
+	 */
 	private void setPossibleValues(char[][] copyRowValues) {
-		
+
 		possibleValues = new LinkedHashMap<Integer, List<Character>>();
 
 		for (int i = 0; i < 9; i++) {
@@ -279,7 +418,7 @@ public class SolvingMethods implements SolvingMethods_IF {
 
 						if (validate(NUMBERS[k], i, j)) {
 
-							int index = getIndex(i, j);
+							int index = getIndex(i, j, 1);
 							if (possibleValues.get(index) == null) {
 								possibleValues.put(index, new ArrayList<Character>());
 							}
@@ -289,17 +428,100 @@ public class SolvingMethods implements SolvingMethods_IF {
 				}
 			}
 		}
-		
+
+	}
+
+	private void updatePossibleValues(int indexOfValue, Character value) {
+
+		possibleValues.put(indexOfValue, new ArrayList<Character>());
+
+		int rowNumber = indexOfValue / 9;
+		int columnNumber = indexOfValue % 9;
+		int[] cellBoxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
+
+		removePossibleValuesFromRow(value, rowNumber, new ArrayList<Integer>());
+
+		removePossibleValuesFromColumn(value, columnNumber, new ArrayList<Integer>());
+
+		// Checks the box in which the value was put
+		for (int i = 0; i < 9; i++) {
+
+			int index = getIndex(cellBoxCoordinates[0], i, 3);
+			if (possibleValues.containsKey(index) && possibleValues.get(index).contains(value)) {
+				possibleValues.get(index).remove(value);
+				progressMade = true;
+			}
+		}
+	}
+
+	private void removePossibleValuesFromRow(Character value, int rowNumber, List<Integer> protectedIndexes) {
+		int startingIndex = 0 + 9 * rowNumber;
+	
+		for (int i = 0; i < 9; i++) {
+
+			if (possibleValues.containsKey(startingIndex + i) && !protectedIndexes.contains(startingIndex + i)) {
+				if (possibleValues.get(startingIndex + i).contains(value)) {
+					possibleValues.get(startingIndex + i).remove(value);
+					progressMade = true;
+				}
+			}
+		}
 	}
 	
+	private void removePossibleValuesFromColumn(Character value, int columnNumber, List<Integer> protectedIndexes) {
+		int startingIndex = columnNumber;
+		
+		for (int i = 0; i < 9; i++) {
+			
+			if (possibleValues.containsKey(startingIndex + i * 9) && !protectedIndexes.contains(startingIndex + i * 9)) {
+				if (possibleValues.get(startingIndex + i * 9).contains(value)) {
+					possibleValues.get(startingIndex + i * 9).remove(value);
+					progressMade = true;
+				}
+			}
+		}
+	}
+
 	private Character[] listToArray(List<Character> list) {
 		Character[] array = new Character[list.size()];
-		
+
 		for (int i = 0; i < list.size(); i++) {
 			array[i] = list.get(i);
 		}
-		
+
 		return array;
+	}
+
+	private void printArrays() {
+
+		System.out.println("ROW");
+		for (int z = 0; z < 9; z++) {
+			for (int k = 0; k < 9; k++) {
+				System.out.print("[" + copyRowValues[z][k] + "]");
+			}
+			System.out.println();
+		}
+		System.out.println();
+
+		System.out.println("COLUMN");
+		for (int z = 0; z < 9; z++) {
+			for (int k = 0; k < 9; k++) {
+				System.out.print("[" + copyColumnValues[k][z] + "]");
+			}
+			System.out.println();
+		}
+		System.out.println();
+
+		System.out.println("BOX");
+		for (int z = 0; z < 9; z++) {
+			for (int k = 0; k < 9; k++) {
+				int boxCoordinates[] = getCellBoxCoordinates(z, k);
+				System.out.print("[" + copyBoxValues[boxCoordinates[0]][boxCoordinates[1]] + "]");
+			}
+			System.out.println();
+		}
+		System.out.println();
+
 	}
 
 }

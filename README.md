@@ -5,3 +5,5 @@ After some research on how these puzzles are made it became clear that valid Sud
 Thus this project now creates valid Sudokus that the user can solve.
 
 This project features a simple GUI built with Java Swing that displays the Sudoku grid. Users can fill the grid by pressing a number button on the keyboard while hovering a cell with a mouse.
+
+![alt text](https://raw.githubusercontent.com/miikko/SudokuSolver/master/sudokusolver/img/GUI-picture.PNG)

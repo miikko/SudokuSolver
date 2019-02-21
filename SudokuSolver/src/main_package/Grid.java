@@ -6,34 +6,27 @@ import java.util.Random;
 
 public class Grid {
 
-	public static Square[] cells;
+	//private static Square[] cells;
 	private final char[] NUMBERS = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 	private char[][] cellRowValues;
 	private char[][] cellColumnValues;
 	private char[][] cellBoxValues;
-	private char[] initialState;
+	private char[] gridState;
 	private Random random;
 	private SolvingMethods sMethods;
 
 	public Grid() {
-		cells = new Square[81];
 		cellRowValues = new char[9][9];
 		cellColumnValues = new char[9][9];
 		cellBoxValues = new char[9][9];
+		gridState = new char[81];
 		random = new Random();
 		sMethods = new SolvingMethods();
-		initialState = createSudoku();
+		createSudoku();
 	}
 
-	public static void addCellToGrid(Square cell, int index) {
-		if (index < 81) {
-			cells[index] = cell;
-		}
-	}
+	private void createSudoku() {
 
-	private char[] createSudoku() {
-
-		char[] initialCellValues = new char[cells.length];
 		int index = 0;
 		List<Character> invalidCellValues = new ArrayList<>();
 
@@ -49,7 +42,7 @@ public class Grid {
 
 				if (validate(value, i, j)) {
 
-					initialCellValues[index] = value;
+					gridState[index] = value;
 					cellRowValues[i][j] = value;
 					cellColumnValues[j][i] = value;
 
@@ -63,13 +56,13 @@ public class Grid {
 					j--;
 					invalidCellValues.add(value);
 
-					// If there are no valid values for this cell, the program restarts the process
+					// If there are no valid values for this cell, begins filling the cells from the start
 					if (invalidCellValues.size() == NUMBERS.length) {
 
 						cellRowValues = new char[9][9];
 						cellColumnValues = new char[9][9];
 						cellBoxValues = new char[9][9];
-						initialCellValues = new char[cells.length];
+						gridState = new char[81];
 						invalidCellValues.clear();
 						i = -1;
 						j = 8;
@@ -81,15 +74,45 @@ public class Grid {
 		}
 
 		// Grid is filled, now take out values
-		removeValuePairsFromGrid(initialCellValues);
+		removeValuePairsFromGrid();
 		
-		return initialCellValues;
 	}
 
 	// Checks if the given value is valid for the given cell
-	// Assumes that the index specified cell is empty
 	private boolean validate(char value, int rowNumber, int columnNumber) {
 
+		if (cellRowValues[rowNumber][columnNumber] != 0) {
+			return false;
+		}
+		
+		for (int i = 0; i < 9; i++) {
+			if (cellRowValues[rowNumber][i] == value) {
+				return false;
+			}
+		}
+
+		for (int i = 0; i < 9; i++) {
+			if (cellColumnValues[columnNumber][i] == value) {
+				return false;
+			}
+		}
+
+		int[] cellBoxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
+		for (int i = 0; i < 9; i++) {
+			if (cellBoxValues[cellBoxCoordinates[0]][i] == value) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+	
+	public boolean validate(char value, int index) {
+
+		int[] rowAndColumnNums = getRowAndColumnNums(index);
+		int rowNumber = rowAndColumnNums[0];
+		int columnNumber = rowAndColumnNums[1];
+		
 		for (int i = 0; i < 9; i++) {
 			if (cellRowValues[rowNumber][i] == value) {
 				return false;
@@ -112,7 +135,12 @@ public class Grid {
 		return true;
 	}
 
-	private int[] getCellBoxCoordinates(int rowNumber, int columnNumber) {
+	private int[] getCellBoxCoordinates(int rowNumber, int columnNumber) throws IllegalArgumentException {
+		
+		if (rowNumber < 0 || columnNumber < 0 || rowNumber > 8 || columnNumber > 8) {
+			throw new IllegalArgumentException();
+		}
+		
 		int boxNum = 0;
 		int boxIndex = 0;
 
@@ -162,20 +190,33 @@ public class Grid {
 		return new int[] { boxNum, boxIndex };
 	}
 
-	private void clearCellValueFromArrays(int rowNumber, int columnNumber, char[] initialCellValues) {
+	private void clearCellValueFromArrays(int rowNumber, int columnNumber) {
 		cellRowValues[rowNumber][columnNumber] = 0;
 		cellColumnValues[columnNumber][rowNumber] = 0;
 		int[] cellBoxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
 		cellBoxValues[cellBoxCoordinates[0]][cellBoxCoordinates[1]] = 0;
-		initialCellValues[getIndex(rowNumber, columnNumber)] = 0;
+		gridState[getIndex(rowNumber, columnNumber)] = 0;
+	}
+	
+	public void clearCellValueFromArrays(int index) {
+		
+		int[] rowAndColumnNums = getRowAndColumnNums(index);
+		int rowNumber = rowAndColumnNums[0];
+		int columnNumber = rowAndColumnNums[1];
+		
+		cellRowValues[rowNumber][columnNumber] = 0;
+		cellColumnValues[columnNumber][rowNumber] = 0;
+		int[] cellBoxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
+		cellBoxValues[cellBoxCoordinates[0]][cellBoxCoordinates[1]] = 0;
+		gridState[getIndex(rowNumber, columnNumber)] = 0;
 	}
 
-	public char[] getInitialState() {
-		return initialState;
+	public char[] getGridState() {
+		return gridState;
 	}
 
 	// Pair coordinates are mirrored. Example: cell1(1,2), cell2(7,6)
-	private boolean removeValuePairsFromGrid(char[] initialCellValues) {
+	private boolean removeValuePairsFromGrid() {
 
 		int lastIndex = 40;
 		int counter = 0;
@@ -194,21 +235,21 @@ public class Grid {
 				int columnNum = rowAndColumnNums[1];
 				
 				char[] copyValues = new char[] { cellRowValues[rowNum][columnNum], cellRowValues[8 - rowNum][8 - columnNum] };
-				clearCellValueFromArrays(rowNum, columnNum, initialCellValues);
-				clearCellValueFromArrays(8 - rowNum, 8 - columnNum, initialCellValues);
+				clearCellValueFromArrays(rowNum, columnNum);
+				clearCellValueFromArrays(8 - rowNum, 8 - columnNum);
 				
 				if (!sMethods.checkForSingleSolution(cellRowValues, cellColumnValues, cellBoxValues)) {
 					cellRowValues[rowNum][columnNum] = copyValues[0];
 					cellColumnValues[columnNum][rowNum] = copyValues[0];
 					int[] boxCoordinates = getCellBoxCoordinates(rowNum, columnNum);
 					cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[0];
-					initialCellValues[getIndex(rowNum, columnNum)] = copyValues[0];
+					gridState[getIndex(rowNum, columnNum)] = copyValues[0];
 
 					cellRowValues[8 - rowNum][8 - columnNum] = copyValues[1];
 					cellColumnValues[8 - columnNum][8 - rowNum] = copyValues[1];
 					boxCoordinates = getCellBoxCoordinates(8 - rowNum, 8 - columnNum);
 					cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = copyValues[1];
-					initialCellValues[getIndex(8 - rowNum, 8 - columnNum)] = copyValues[1];
+					gridState[getIndex(8 - rowNum, 8 - columnNum)] = copyValues[1];
 
 				}
 			}
@@ -222,10 +263,33 @@ public class Grid {
 		return index;
 	}
 	
-	private int[] getRowAndColumnNums(int index) {		
+	private int[] getRowAndColumnNums(int index) throws IndexOutOfBoundsException {
+		if (index > 80 || index < 0) {
+			throw new IndexOutOfBoundsException();
+		}
 		int rowNumber = index / 9;
 		int columnNumber = index % 9;
 		return new int[] {rowNumber, columnNumber};
+	}
+	
+	public void putValueToArrays(char value, int index) {
+		int rowNumber = index / 9;
+		int columnNumber = index % 9;
+
+		gridState[index] = value;
+		cellRowValues[rowNumber][columnNumber] = value;
+		cellColumnValues[columnNumber][rowNumber] = value;
+		int[] boxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
+		cellBoxValues[boxCoordinates[0]][boxCoordinates[1]] = value;
+	}
+	
+	public int getBoxNum(int index) throws IndexOutOfBoundsException {
+		if (index > 80 || index < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		int[] rowAndColumnNums = getRowAndColumnNums(index);
+		int boxNum = getCellBoxCoordinates(rowAndColumnNums[0], rowAndColumnNums[1])[0];
+		return boxNum;
 	}
 
 	private void printArrays() {

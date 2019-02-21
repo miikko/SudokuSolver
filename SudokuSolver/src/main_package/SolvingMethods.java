@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 import interfaces.SolvingMethods_IF;
 
@@ -35,7 +34,7 @@ public class SolvingMethods implements SolvingMethods_IF {
 			singleCandidate();
 			singlePosition();
 		}
-		System.out.println("End");
+		
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
 				if (!Character.isDigit(copyRowValues[i][j])) {
@@ -187,9 +186,10 @@ public class SolvingMethods implements SolvingMethods_IF {
 
 	@Override
 	public void doublePairs() {
-		
+		 
 	}
 	
+	//Selection type: 1 = row, 2 = column, 3 = box
 	private boolean findSingles(Character[][][] possibleValues, int selectionType) {
 
 		LinkedHashMap<Character, Integer> singles = new LinkedHashMap<Character, Integer>();
@@ -251,7 +251,7 @@ public class SolvingMethods implements SolvingMethods_IF {
 	 * @param firstNumber
 	 * @param secondNumber
 	 * @param selectionType
-	 * @return
+	 * @return index of the specified cell
 	 */
 	private int getIndex(int firstNumber, int secondNumber, int selectionType) {
 		int index = 0;

@@ -1,28 +1,26 @@
 package main_package;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
 public class BoardPanel extends JPanel {
-	Square redSquare = new Square(Color.red, 10, 10, 90, 90);
-	Board board;
-	final char[] NUMBERS = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-	int indexOfNumber;
-	int[] coordinates;
-	boolean numberFlag = false;
-	final int FONTSIZE = 60;
-	final int OFFSET = FONTSIZE / 4;
-	final Font FONT = new Font("Arial", Font.BOLD, FONTSIZE);
+
+	private Board board;
+	private final char[] NUMBERS = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+	private int indexOfNumber;
+	private int[] coordinates;
+	private boolean numberFlag = false;
+	private final int FONTSIZE = 60;
+	private final int OFFSET = FONTSIZE / 4;
+	private final Font FONT = new Font("Arial", Font.BOLD, FONTSIZE);
 	private int boardLoadCounter;
 	private MouseAdapter mouseAdapter;
 
@@ -57,8 +55,11 @@ public class BoardPanel extends JPanel {
 				int mouseXPos = e.getX();
 				int mouseYPos = e.getY();
 
-				if (mouseXPos > 10 && mouseXPos < 910 && mouseYPos > 10 && mouseYPos < 910) {
+				if (mouseXPos > board.getX() && mouseXPos < board.getWidth() + board.getX() && mouseYPos > board.getY()
+						&& mouseYPos < board.getHeight() + board.getY()) {
 					coordinates = board.getSqrCenter(mouseXPos, mouseYPos);
+				} else {
+					coordinates = new int[] { -1, -1 };
 				}
 			}
 		};
@@ -66,24 +67,35 @@ public class BoardPanel extends JPanel {
 
 	private void paintNumber() {
 
-		if (!board.cellPrefilled(coordinates)) {
-			numberFlag = true;
-			repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
-					board.getCellWidth() - 1, board.getCellHeight() - 1);
+		if (!board.cellPrefilled(coordinates) && coordinates[0] > board.getX() && coordinates[1] > board.getY()) {
+
+			int cellIndex = board.getCellIndex(coordinates);
+			if (board.checkValueValidity(cellIndex, NUMBERS[indexOfNumber])) {
+				
+				board.addValueToCell(cellIndex, NUMBERS[indexOfNumber]);
+				numberFlag = true;
+				// offsets are added so that the repaint area does not cover the cell borders.
+				repaint(coordinates[0] - board.getCellWidth() / 2 + 10, coordinates[1] - board.getCellHeight() / 2 + 10,
+						board.getCellWidth() - 30, board.getCellHeight() - 30);
+				
+				if (board.getEmptyCellCount() == 0) {
+					//TODO add sudoku completion event
+					System.out.println("Sudoku complete.");
+				}
+			}
 		}
+		
 	}
 
 	private void clearCell() {
 
 		if (!board.cellPrefilled(coordinates)) {
+			int cellIndex = board.getCellIndex(coordinates);
+			board.removeValueFromCell(cellIndex);
 			numberFlag = false;
 			repaint(coordinates[0] - board.getCellWidth() / 2, coordinates[1] - board.getCellHeight() / 2,
 					board.getCellWidth() - 1, board.getCellHeight() - 1);
 		}
-	}
-
-	public Dimension getPreferredSize() {
-		return new Dimension(920, 920);
 	}
 
 	public void paintComponent(Graphics g) {

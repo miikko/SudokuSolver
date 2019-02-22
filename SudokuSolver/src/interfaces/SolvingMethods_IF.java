@@ -29,6 +29,11 @@ public interface SolvingMethods_IF {
 	 */
 	public abstract void candidateLine();
 	
+	/**
+	 * Goes through each row/column set with the size of box width
+	 * Tries to find two pairs of possible values in the matching rows/columns
+	 * If such pairs are found, the possible value is removed from the remaining boxes row/column
+	 */
 	public abstract void doublePairs();
 	
 	//ADVANCED//

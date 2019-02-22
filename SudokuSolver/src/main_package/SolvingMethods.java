@@ -17,7 +17,10 @@ public class SolvingMethods implements SolvingMethods_IF {
 	private boolean progressMade = true;
 
 	public SolvingMethods() {
-
+		copyRowValues = new char[9][9];
+		copyColumnValues = new char[9][9];
+		copyBoxValues = new char[9][9];
+		possibleValues = new LinkedHashMap<Integer, List<Character>>();
 	}
 
 	@Override
@@ -27,14 +30,14 @@ public class SolvingMethods implements SolvingMethods_IF {
 		copyBoxValues = copy2DimensionalArray(boxValues, 9, 9);
 		progressMade = true;
 		setPossibleValues(copyRowValues);
-
+		//Try filling the grid using the solving methods
 		while (progressMade) {
 			progressMade = false;
 			candidateLine();
 			singleCandidate();
 			singlePosition();
 		}
-		
+		//Check for empty cell
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
 				if (!Character.isDigit(copyRowValues[i][j])) {
@@ -47,19 +50,14 @@ public class SolvingMethods implements SolvingMethods_IF {
 
 	@Override
 	public void singlePosition() {
-
 		Character[][][] possibleRowValues = new Character[9][9][9];
 		Character[][][] possibleColumnValues = new Character[9][9][9];
 		Character[][][] possibleBoxValues = new Character[9][9][9];
-
 		// Finds possible values
 		for (int i = 0; i < 9; i++) {
-
 			for (int j = 0; j < 9; j++) {
-
 				int index = getIndex(i, j, 1);
 				if (possibleValues.get(index) != null && possibleValues.get(index).size() > 0) {
-
 					List<Character> possibleValuesForThisCell = possibleValues.get(index);
 					possibleRowValues[i][j] = listToArray(possibleValuesForThisCell);
 					possibleColumnValues[j][i] = listToArray(possibleValuesForThisCell);
@@ -68,7 +66,6 @@ public class SolvingMethods implements SolvingMethods_IF {
 				}
 			}
 		}
-
 		if (findSingles(possibleRowValues, 1)) {
 			progressMade = true;
 		} else if (findSingles(possibleColumnValues, 2)) {
@@ -386,7 +383,7 @@ public class SolvingMethods implements SolvingMethods_IF {
 		return new int[] { boxNum, boxIndex };
 	}
 
-	private void putValueToArrays(char value, int index) {
+	public void putValueToArrays(char value, int index) {
 		int rowNumber = index / 9;
 		int columnNumber = index % 9;
 
@@ -395,40 +392,6 @@ public class SolvingMethods implements SolvingMethods_IF {
 		int[] boxCoordinates = getCellBoxCoordinates(rowNumber, columnNumber);
 		copyBoxValues[boxCoordinates[0]][boxCoordinates[1]] = value;
 		updatePossibleValues(index, value);
-	}
-
-	/**
-	 * Iterates through all the cells. Upon finding an empty cell, the method will
-	 * fill a list with all the possible values for that cell. After filling the
-	 * list, it will be put into a HashMap that uses the cell's index as a key.
-	 * 
-	 * @param copyRowValues
-	 */
-	private void setPossibleValues(char[][] copyRowValues) {
-
-		possibleValues = new LinkedHashMap<Integer, List<Character>>();
-
-		for (int i = 0; i < 9; i++) {
-
-			for (int j = 0; j < 9; j++) {
-
-				if (!Character.isDigit(copyRowValues[i][j])) {
-
-					for (int k = 0; k < NUMBERS.length; k++) {
-
-						if (validate(NUMBERS[k], i, j)) {
-
-							int index = getIndex(i, j, 1);
-							if (possibleValues.get(index) == null) {
-								possibleValues.put(index, new ArrayList<Character>());
-							}
-							possibleValues.get(index).add(NUMBERS[k]);
-						}
-					}
-				}
-			}
-		}
-
 	}
 
 	private void updatePossibleValues(int indexOfValue, Character value) {
@@ -492,8 +455,7 @@ public class SolvingMethods implements SolvingMethods_IF {
 		return array;
 	}
 
-	private void printArrays() {
-
+	public void printArrays() {
 		System.out.println("ROW");
 		for (int z = 0; z < 9; z++) {
 			for (int k = 0; k < 9; k++) {
@@ -521,7 +483,48 @@ public class SolvingMethods implements SolvingMethods_IF {
 			System.out.println();
 		}
 		System.out.println();
-
 	}
 
+	public LinkedHashMap<Integer, List<Character>> getPossibleValues() {
+		return possibleValues;
+	}
+	
+	/**
+	 * Iterates through all the cells. Upon finding an empty cell, the method will
+	 * fill a list with all the possible values for that cell. After filling the
+	 * list, it will be put into a HashMap that uses the cell's index as a key.
+	 * 
+	 * @param copyRowValues
+	 */
+	public void setPossibleValues(char[][] copyRowValues) {
+		possibleValues = new LinkedHashMap<Integer, List<Character>>();
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				if (!Character.isDigit(copyRowValues[i][j])) {
+					for (int k = 0; k < NUMBERS.length; k++) {
+						if (validate(NUMBERS[k], i, j)) {
+							int index = getIndex(i, j, 1);
+							if (possibleValues.get(index) == null) {
+								possibleValues.put(index, new ArrayList<Character>());
+							}
+							possibleValues.get(index).add(NUMBERS[k]);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public char[][] getCopyRowValues() {
+		return copyRowValues;
+	}
+
+	public char[][] getCopyColumnValues() {
+		return copyColumnValues;
+	}
+
+	public char[][] getCopyBoxValues() {
+		return copyBoxValues;
+	}
+	
 }

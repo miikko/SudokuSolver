@@ -202,7 +202,9 @@ public class SolvingMethodsTest {
 		sm.putValueToArrays('3', 79);
 		sm.putValueToArrays('4', 80);
 		sm.setPossibleValues(sm.getCopyRowValues());
+		sm.candidateLine();
+		sm.doublePairs();
 		LinkedHashMap<Integer, List<Character>> possibleValues = sm.getPossibleValues();
-		assertEquals(1, possibleValues.get(75));
+		assertEquals(1, possibleValues.get(75).size());
 	}
 }
